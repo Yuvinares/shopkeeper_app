@@ -30,15 +30,31 @@ def create_tables(conn):
 
 
 def add_product(conn):
-    """Add a new product to the 'products' table."""
+    """Add a new product or update the quantity of an existing product."""
     name = input("Enter product name: ")
     price = float(input("Enter product price: "))
     quantity = int(input("Enter product quantity: "))
     cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO products (name, price, quantity)
-        VALUES (?, ?, ?)
-    ''', (name, price, quantity))
+
+    cursor.execute('SELECT id, quantity FROM products WHERE name = ?', (name,))
+    product = cursor.fetchone()
+
+    if product:
+        product_id, existing_quantity = product
+        new_quantity = existing_quantity + quantity
+        cursor.execute('''
+            UPDATE products
+            SET quantity = ?, price = ?
+            WHERE id = ?
+        ''', (new_quantity, price, product_id))
+        print(f"Updated {name}: new quantity = {new_quantity}")
+    else:
+        cursor.execute('''
+            INSERT INTO products (name, price, quantity)
+            VALUES (?, ?, ?)
+        ''', (name, price, quantity))
+        print(f"Added new product: {name}")
+
     conn.commit()
     print("Product added successfully.")
 
